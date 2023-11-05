@@ -1,42 +1,61 @@
-import "./study/style.less";
-import * as THREE from "three";
+import { add } from "mathjs";
+import { 
+    THREE, 
+    OrbitControls, 
+    RGBELoader,
+    GenerateCanvas,
+    GLTFLoader
+  } from "./study/settings";
 
-let renderer, scene, camera;
+const canvas = GenerateCanvas();
+let renderer, scene, camera, controls;
 
 function init() {
-    const canvas = document.createElement("canvas");
-    document.body.appendChild(canvas);
+	renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.shadowMap.enabled = true; 
 
-    //화면조정
-    renderer = new THREE.WebGLRenderer({canvas:canvas, antialias: true}); // 부드럽게
-    renderer.setSize(window.innerWidth, window.innerHeight); //화면배율
+	scene = new THREE.Scene();
+	camera = new THREE.PerspectiveCamera(
+		32,
+		window.innerWidth / window.innerHeight
+	);
+	camera.position.set(0, 0, 10);
+	controls = new OrbitControls(camera, canvas);
 
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(45,window.innerWidth/window.innerHeight); //오브젝트배율조정
-    camera.position.set(0, 0, 10);
-    // 빛
-    const light = new THREE.DirectionalLight();
-    light.position.set(1,1,1);
-    scene.add(light);
+	const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+	directionalLight.position.set(1, 1, 1);
+	scene.add(directionalLight);
 
+    directionalLight.castShadow = true;
 
-    // sphere
-    const sphere_geometry = new THREE.SphereGeometry(); //입체
-    const matarial = new THREE.MeshPhongMaterial();
-    const sphere = new THREE.Mesh(sphere_geometry, matarial);
-    scene.add(sphere);
+	const sphere = new THREE.SphereGeometry();
+	const material = new THREE.MeshStandardMaterial();
+	const mesh = new THREE.Mesh(sphere, material);
+	//scene.add(mesh);
 
-    render();
+	// gltf 로딩 시작
+	const loader = new GLTFLoader();
+	loader.load("/gltf/rocket.glb", (gltf) => {
+		const model = gltf.scene;
+		model.traverse((obj) => { // traverse 함수 수정
+			if (obj.isMesh) {
+				console.log(obj);
+				obj.castShadow = true;
+				obj.receiveShadow = true;
+			}
+		});
+
+		scene.add(model);
+		// render 함수 호출을 로딩 완료 후로 이동
+		render();
+	});
+	// gltf 로딩 끝
 }
 
 function render() {
-    renderer.render(scene, camera);
-requestAnimationFrame(render);
+	requestAnimationFrame(render);
+	renderer.render(scene, camera);
+	controls.update();
 }
 
 init();
-/*
-let renderer;
-let scene;
-let camera;
-*/
